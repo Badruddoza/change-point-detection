@@ -1,0 +1,122 @@
+rm(list=ls())
+mydir="C:/Users/syedb/OneDrive - Texas Tech University/1. Change point/1.assa"
+set.seed(123)
+
+#Ecp: An R Package for Nonparametric Multiple Change Point
+#Analysis of Multivariate Data. James and Matteson 2015
+
+#install.packages("mcp")
+#An R Package for Regression With Multiple Change Points
+#Jonas Kristoffer Lindeløv ## HORRIBLE PACKAGE NO EXAMPLE WORK!
+
+#Consistent two-stage multiple change-point detection in linear models
+#Baisuo JIN, Yuehua WU and Xiaoping SHI 2016
+#install.packages("TSMCP")
+library(TSMCP)
+#https://rdrr.io/cran/TSMCP/man/tsmcplm.html 
+
+## example 1: mean shift model
+## true change point location:
+## 100, 130, 150, 230, 250, 400, 440, 650, 760, 780, 810
+Y <- rnorm(1000, 0, 0.5) +
+  c(rep(0,100), rep(4,30),rep(-1,20), rep(2,80), rep(-2,20),
+    rep(3,150), rep(-1, 40), rep(1,210), rep(5,110), rep(2,20),
+    rep(7,30), rep(3,190))
+ts.plot(Y)
+##estimate change points
+tsmcplm(Y = Y, X = NULL, method = "adapt", c = 0.3)
+
+## example 2: linear model:
+## a periodic auto correlation series with period 122 and
+## order of auto correlation 1
+## true change point location:
+## 200, 350, 450, 550, 700, and 850
+n <- 1000
+y <- rnorm(n)
+for (t in 2:n) {
+  y[t] <- cos(t*pi/61) + 3*sin(t*pi/61) + 0.5*y[t-1] + (2*sin(t*pi/61) +
+                                                          0.1 * y[t-1])*(200 < t)+ (2* cos(t*pi/61)- 4 *sin(t*pi/61)- 0.6* y[t-1] )*
+    (350 < t) + (2* sin(t*pi/61) + 0.7* y[t-1] )*(450 < t) + (-3* sin(t*pi/61) -
+                                                                0.3* y[t-1] )*(550 < t) + (-3* cos(t*pi/61) + 5* sin(t*pi/61))* (700 < t) +
+    (3* cos(t*pi/61) - 5* sin(t*pi/61) - 0.4*y[t-1] )* (850 < t) + rnorm(1)
+}
+ts.plot(y)
+x <- sapply(2:n, function(t){cbind(cos(t*pi/61), sin(t*pi/61), y[t-1])},
+            simplify = FALSE)
+x <- do.call(rbind, x)
+tsmcplm(Y = y[-1], X = x, method = "adapt", c = 2)
+
+
+
+
+#install.packages("changepoint")
+#Rebecca Killick 2016
+#http://www.lancs.ac.uk/~killick/Pub/KillickEckley2011.pdf 
+library(changepoint)
+
+m.data=c(rnorm(100,0,1),rnorm(100,1,1),rnorm(100,0,1),rnorm(100,0.2,1))
+ts.plot(m.data,xlab='Index')
+
+m.pelt=cpt.mean(m.data,method='PELT')
+plot(m.pelt,type='l',cpt.col='blue',xlab='Index',cpt.width=4)
+cpts(m.pelt)
+
+
+
+#install.packages("wbs")
+# Fryzlewicz 2014
+#https://projecteuclid.org/download/pdfview_1/euclid.aos/1413810727
+
+#an example in which standard Binary Segmentation fails to detect change points
+library(wbs)
+x <- rnorm(300)+ c(rep(0,130),rep(-1,20),rep(1,20),rep(0,130))
+ts.plot(x,xlab='Index')
+plot(cpt.mean(x,method='PELT'),type='l',cpt.col='blue')
+
+s <- sbs(x)
+w <- wbs(x)
+s.cpt <- changepoints(s)
+s.cpt
+w.cpt <- changepoints(w)
+w.cpt
+
+# in this example, both algorithms work well
+x <- rnorm(300) + c(rep(1,50),rep(0,250))
+s <- sbs(x)
+w <- wbs(x)
+s.cpt <- changepoints(s)
+s.cpt
+w.cpt <- changepoints(w)
+w.cpt
+
+
+x <- rnorm(300) + c(rep(1,50),rep(0,250))
+ts.plot(x,xlab='Index')
+plot(cpt.mean(x,method='PELT'),type='l',cpt.col='blue')
+w <- wbs(x)
+w.cpt <- changepoints(w,penalty="bic.penalty")
+w.cpt$cpt.ic
+
+
+# Adams and MacKay 2007 Bayesian Online Changepoint Detection
+# https://arxiv.org/pdf/0710.3742.pdf
+#install.packages("ocp")
+library(ocp)
+
+simdatapts<- c(rnorm(n = 50), rnorm(n=50, 100))
+ts.plot(simdatapts)
+ocpd1<- onlineCPD(simdatapts)
+ocpd1$changepoint_lists # view the changepoint lists
+str(ocpd1)
+summary(ocpd1)
+
+plot(ocpd1)
+plot(ocpd1, data= simdatapts) # plot with the original data
+plot(ocpd1, trueCPs = c(1, 51)) # plot with showing the true changepoints
+plot(ocpd1, main_title="Example plot", showmaxes = FALSE) # not showing max probabilities
+plot(ocpd1, graph_changepoints=FALSE) # not showing the changepoints plot
+plot(ocpd1, graph_probabilities=FALSE) # not showing the R matrix
+plot(ocpd1, showRprobs=FALSE, showcps= FALSE)#plotting r with maxes but no probabilities,
+# and not showing the locations of the found changepoints
+
+
